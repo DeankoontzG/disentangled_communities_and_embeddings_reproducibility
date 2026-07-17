@@ -1,0 +1,18 @@
+cat << 'EOF' >> .gitignore
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# OS files
+.DS_Store
+EOF
