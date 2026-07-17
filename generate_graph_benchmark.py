@@ -336,9 +336,7 @@ def generate_graph_benchmarks(Hybrid_ratios_list, P_sbm, P_spatial, position, k_
     print("="*70)
     print(pd.DataFrame(results_list).to_string(index=False))
     print("="*70)
-    
-    save_path = f"graph_library/{name}_P_matrices_iter_{nb_iter}.joblib"
-    joblib.dump(all_P_matrices, save_path)
+
     return all_P_matrices
 
 # =========================================================================
