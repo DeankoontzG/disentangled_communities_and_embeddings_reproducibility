@@ -132,9 +132,8 @@ def _extract_pair_features(G_train, u, v, densities):
 
     for emb in EMBEDDINGS:
         if emb in nu and emb in nv:
-            vec_u = nu[emb].reshape(1, -1)
-            vec_v = nv[emb].reshape(1, -1)
-            hadamard_prod = vec_u * vec_v
+            vec_u = np.array(nu[emb]).reshape(1, -1)
+            vec_v = np.array(nv[emb]).reshape(1, -1)
             features[f'{emb}_cos'] = cosine_similarity(vec_u, vec_v)[0][0]
             features[f'{emb}_dist'] = np.linalg.norm(vec_u - vec_v)
         

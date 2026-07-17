@@ -203,39 +203,27 @@ def confidence_interval_95(data):
     return sem * stats.t.ppf((1 + 0.95) / 2., n - 1)
 
 def generate_and_show_plot(csv_path, metric="AUC-ROC_eval", name="plot_output"):
-    """Loads data, aggregates performance metrics, and displays an interactive pop-up plot."""
+    """Loads data, aggregates performance metrics, and displays clean side-by-side plots."""
     if not os.path.exists(csv_path):
         print(f"Error: The file '{csv_path}' could not be found.")
         return
 
     df_compare = pd.read_csv(csv_path)
 
+    # All targeted experiments
     feat_to_plot = [
-        "GT_pos",
-        "GT_sbm",
-        "GT_pos + GT_sbm",
-        "Louvain",
-        "spatial_disentangled_louvain",
-        "community_disentangled_louvain",
-        "deepwalk",
-        "spatial_disentangled_embed",
-        "community_disentangled_embed",
-
-        "GT_pos + louvain",
-        "GT_pos + spatial_disentangled_louvain",
-        "GT_sbm + louvain",
-        "GT_sbm + community_disentangled_louvain",
-        "GT_pos + deepwalk",
-        "GT_pos + spatial_disentangled_embed",
-        "GT_sbm + community_disentangled_embed",
-        "GT_sbm + deepwalk",
+        "GT_pos", "GT_sbm", "GT_pos + GT_sbm",
+        "Louvain", "spatial_disentangled_louvain", "community_disentangled_louvain",
+        "deepwalk", "spatial_disentangled_embed", "community_disentangled_embed",
+        "GT_pos + louvain", "GT_pos + spatial_disentangled_louvain",
+        "GT_sbm + louvain", "GT_sbm + community_disentangled_louvain",
+        "GT_pos + deepwalk", "GT_pos + spatial_disentangled_embed",
+        "GT_sbm + community_disentangled_embed", "GT_sbm + deepwalk"
     ]
-
     
     df_compare = df_compare[df_compare["Experiment"].isin(feat_to_plot)]
-    df_compare = df_compare.sort_values(by="Experiment", ascending=True)
 
-    # 1. Aggregation
+    # 1. Aggregation (Assuming confidence_interval_95 is defined elsewhere)
     metrics = ["AP_train", "AUC-ROC_train", "AP_eval", "AUC-ROC_eval"] 
     df_avg = df_compare.groupby(["Ratio_SBM", "Experiment"])[metrics].agg([
         ('mean', np.mean),
@@ -244,53 +232,236 @@ def generate_and_show_plot(csv_path, metric="AUC-ROC_eval", name="plot_output"):
 
     df_avg.columns = [f"{col[0]}_{col[1]}" if col[1] else col[0] for col in df_avg.columns.values]
 
-    # 2. Plotting
-    plt.figure(figsize=(12, 7))
-    sns.set_style("whitegrid")
-
+    # --- LATEX CONFIGURATION (SVProc style) ---
     plt.rcParams.update({
         "text.usetex": True,
         "font.family": "serif",
         "font.serif": ["Computer Modern Roman"],
-        'font.size': 11
+        "font.size": 16,             
+        "axes.labelsize": 18,        
+        "xtick.labelsize": 15,       
+        "ytick.labelsize": 15,       
+        "figure.titlesize": 20,
+        "legend.fontsize": 11,       
+        "legend.title_fontsize": 13  
     })
+    
+    # Create the side-by-side layout
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5.5), sharey=True)
+    sns.set_style("whitegrid")
 
-    experiments = df_avg['Experiment'].unique()
-    palette = sns.color_palette("tab10", len(experiments))
-
-    for i, exp in enumerate(experiments):
-        subset = df_avg[df_avg["Experiment"] == exp]
-        mean_col = f"{metric}_mean"
-        ci_col = f"{metric}_ci95" 
+    # --- MAPPING STRICT ---
+    labels_mapping = {
+        "GT_pos": "GT Pos",
+        "GT_sbm": "GT SBM",
+        "GT_pos + GT_sbm": "Theoretical max (GT pos + GT SBM)",
+        "Louvain": "Standard Louvain",
+        "spatial_disentangled_louvain": "Spatial-disentangled Louvain",
+        "community_disentangled_louvain": "Community-disentangled Louvain",
+        "deepwalk": "DeepWalk",
+        "spatial_disentangled_embed": "Spatial-disentangled embeddings",
+        "community_disentangled_embed": "Community-disentangled embeddings",
+        "GT_pos + louvain": "GT Pos + standard Louvain",
+        "GT_pos + spatial_disentangled_louvain": "GT Pos + spatial-disentangled Louvain",
+        "GT_sbm + louvain": "GT SBM + standard Louvain",
+        "GT_sbm + community_disentangled_louvain": "GT SBM + community-disentangled Louvain",
+        "GT_pos + deepwalk": "GT Pos + DeepWalk",
+        "GT_pos + spatial_disentangled_embed": "GT Pos + spatial-disentangled embeddings",
+        "GT_sbm + community_disentangled_embed": "GT SBM + community-disentangled embeddings",
+        "GT_sbm + deepwalk": "GT SBM + DeepWalk"
+    }
+    
+    DESIRED_ORDER = [
+        "Theoretical max (GT pos + GT SBM)",
+        "GT Pos",
+        "GT SBM",
+        "Standard Louvain",
+        "Spatial-disentangled Louvain",
+        "Community-disentangled Louvain",
+        "GT Pos + standard Louvain",
+        "GT Pos + spatial-disentangled Louvain",
+        "GT SBM + standard Louvain",
+        "GT SBM + community-disentangled Louvain",
+        "DeepWalk",
+        "Spatial-disentangled embeddings",
+        "Community-disentangled embeddings",
+        "GT Pos + DeepWalk",
+        "GT Pos + spatial-disentangled embeddings",
+        "GT SBM + DeepWalk", 
+        "GT SBM + community-disentangled embeddings"
+    ]
+    
+    color_mapping = {
+        "Theoretical max (GT pos + GT SBM)": "#000000",
+        "GT Pos": "#4d4d4d",
+        "GT SBM": "#808080",
         
-        color = palette[i]
+        "Standard Louvain": "#b3b3b3",
+        "DeepWalk": "#b3b3b3",
 
-        # Utilisation directe du nom original 'exp' pour le label
-        plt.plot(subset["Ratio_SBM"], subset[mean_col], 
-                 marker='o', label=exp, color=color, linewidth=2, markersize=6)
+        "Spatial-disentangled Louvain" : "#762a83",
+        "Spatial-disentangled embeddings" : "#762a83",
+
+        "Community-disentangled Louvain" : "#d62728",
+        "Community-disentangled embeddings" : "#d62728",
         
-        plt.fill_between(
-            subset["Ratio_SBM"], 
-            subset[mean_col] - subset[ci_col], 
-            subset[mean_col] + subset[ci_col], 
-            color=color, alpha=0.12
+        "GT Pos + standard Louvain": "#6caed6",
+        "GT Pos + DeepWalk": "#6caed6",
+        
+        "GT Pos + spatial-disentangled Louvain": "#55a868",
+        "GT Pos + spatial-disentangled embeddings": "#55a868",
+        
+        "GT SBM + standard Louvain": "#af8dc3",
+        "GT SBM + DeepWalk": "#af8dc3",
+        
+        "GT SBM + community-disentangled Louvain": "#e18752",
+        "GT SBM + community-disentangled embeddings": "#e18752"
+    }
+
+    linestyle_mapping = {
+        "Theoretical max (GT pos + GT SBM)": "--",
+        "GT Pos": "-.",
+        "GT SBM": ":",
+        "Standard Louvain": "-",
+        "Spatial-disentangled Louvain": "-",
+        "Community-disentangled Louvain": "-",
+        "DeepWalk": "-",
+        "Spatial-disentangled embeddings": "-",
+        "Community-disentangled embeddings": "-",
+        "GT Pos + standard Louvain": "-",
+        "GT Pos + DeepWalk": "-",
+        "GT Pos + spatial-disentangled Louvain": "-",
+        "GT Pos + spatial-disentangled embeddings": "-",
+        "GT SBM + standard Louvain": "-",
+        "GT SBM + DeepWalk": "-",
+        "GT SBM + community-disentangled Louvain": "-",
+        "GT SBM + community-disentangled embeddings": "-"
+    }
+    
+    marker_mapping = {
+        # References (No markers)
+        "Theoretical max (GT pos + GT SBM)": None,
+        "GT Pos": None,
+        "GT SBM": None,
+        
+        # Baselines Lone Algos
+        "Standard Louvain": "P",
+        "DeepWalk": "P",
+        "Spatial-disentangled Louvain": "^",
+        "Spatial-disentangled embeddings": "^",
+        "Community-disentangled Louvain": "d",
+        "Community-disentangled embeddings": "d",
+        
+        # Combinations with GT Pos (Left side geometries)
+        "GT Pos + standard Louvain": "o",
+        "GT Pos + DeepWalk": "o",
+        "GT Pos + spatial-disentangled Louvain": "v",
+        "GT Pos + spatial-disentangled embeddings": "v",
+        
+        # Combinations with GT SBM (Right side geometries)
+        "GT SBM + standard Louvain": "X",
+        "GT SBM + DeepWalk": "X",
+        "GT SBM + community-disentangled Louvain": "s",
+        "GT SBM + community-disentangled embeddings": "s"
+    }
+
+    mean_col = f"{metric}_mean"
+    ci_col = f"{metric}_ci95"
+
+    # --- SPLIT DATASETS FOR PLOTTING ---
+    # Left subplot (communities inference features)
+    left_experiments = [
+        "GT_pos", "GT_sbm", "GT_pos + GT_sbm", "Louvain", "community_disentangled_louvain", "spatial_disentangled_louvain", 
+        "GT_pos + louvain", "GT_sbm + louvain", "GT_pos + spatial_disentangled_louvain", "GT_sbm + community_disentangled_louvain"
+    ]
+    df_left = df_avg[df_avg["Experiment"].isin(left_experiments)]
+
+    # Right subplot (embeddings inference features)
+    right_experiments = [
+        "GT_pos", "GT_sbm", "GT_pos + GT_sbm", "deepwalk", "community_disentangled_embed", "spatial_disentangled_embed",
+        "GT_pos + deepwalk", "GT_sbm + deepwalk", "GT_pos + spatial_disentangled_embed", "GT_sbm + community_disentangled_embed"
+    ]
+    df_right = df_avg[df_avg["Experiment"].isin(right_experiments)]
+
+    def plot_subplot(ax, df, title_label):
+        ax.grid(True, linestyle="--", alpha=0.6)
+        experiments = df['Experiment'].unique()
+        
+        for exp in experiments:
+            subset = df[df["Experiment"] == exp]
+            clean_label = labels_mapping.get(exp, exp)
+            color = color_mapping.get(clean_label, "#7f7f7f")
+            linestyle = linestyle_mapping.get(clean_label, "-")
+            marker = marker_mapping.get(clean_label, None)
+            
+            ax.plot(subset["Ratio_SBM"], subset[mean_col], 
+                    marker=marker, linestyle=linestyle,
+                    label=clean_label, color=color, linewidth=2.5, markersize=6)
+            
+            ax.fill_between(
+                subset["Ratio_SBM"], 
+                subset[mean_col] - subset[ci_col], 
+                subset[mean_col] + subset[ci_col], 
+                color=color, alpha=0.08
+            )
+        
+        ax.set_xlabel(r"$\alpha$ (SBM weight ratio)", labelpad=10)
+        ax.set_title(title_label, fontsize=16, pad=12)
+        ax.set_xlim(-0.05, 1.05)
+        ax.set_ylim(0.48, 1.02)
+        
+        # --- REORGANIZE LEGEND ---
+        handles, labels = ax.get_legend_handles_labels()
+        handle_dict = dict(zip(labels, handles))
+        
+        sorted_handles = []
+        sorted_labels = []
+        for exact_label in DESIRED_ORDER:
+            if exact_label in handle_dict:
+                sorted_handles.append(handle_dict[exact_label])
+                sorted_labels.append(exact_label.replace('_', '\_'))
+        
+        for label, handle in handle_dict.items():
+            if label not in DESIRED_ORDER:
+                sorted_handles.append(handle)
+                sorted_labels.append(label.replace('_', '\_'))
+
+        ax.legend(
+            sorted_handles,
+            sorted_labels,
+            loc='lower center', 
+            bbox_to_anchor=(0.5, 1.12), 
+            ncol=2,
+            title="Feature Configurations", 
+            frameon=True,              
+            facecolor='white',         
+            edgecolor='black',         
+            framealpha=1.0,            
+            fancybox=False,
+            columnspacing=0.8,         
+            handletextpad=0.4          
         )
 
-    plt.xlabel(r"$\alpha$ (SBM weight ratio in hybridization)", labelpad=10)
-    plt.ylabel(f"{metric.replace('_', ' ')}", labelpad=10)
-    plt.legend(title="Configurations", bbox_to_anchor=(1.02, 1), loc='upper left')
-    plt.ylim(0.48, 1.02)
-    plt.tight_layout()
-
-    # Automatic Saving
+    # Draw the two subplots
+    plot_subplot(ax1, df_left, "Communities inferences:")
+    plot_subplot(ax2, df_right, "Embedding inferences:")
+    
+    ax1.set_ylabel(f"{metric.replace('_', ' ')}", labelpad=10)
+    
+    plt.subplots_adjust(wspace=0.15) 
+    
+    # Save Layouts
     output_dir = os.path.join("your_results", "plots")
     os.makedirs(output_dir, exist_ok=True)
-    save_path = os.path.join(output_dir, f"{name}_{metric}.png")
-    plt.savefig(save_path, bbox_inches='tight', dpi=300)
-    print("="*80)
-    print(f"Plot successfully saved to: {save_path}")
     
-    # FORCE INTERACTIVE DISPLAY WITHOUT FREEZING THE TERMINAL UPON CLOSING
-    print("Opening plot window... Close the window to return control to the terminal.")
+    save_path_png = os.path.join(output_dir, f"{name}_{metric}_READY.png")
+    plt.savefig(save_path_png, bbox_inches='tight', dpi=300)
+    save_path_pdf = os.path.join(output_dir, f"{name}_{metric}_READY.pdf")
+    plt.savefig(save_path_pdf, bbox_inches='tight')
+    
+    print("="*80)
+    print(f"Plots successfully saved to:\n -> {save_path_png}\n -> {save_path_pdf}")
+    
+    print("Opening plot window...")
     plt.ion()  
     plt.show(block=True)

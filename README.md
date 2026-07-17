@@ -1,4 +1,4 @@
-# DUPUY-Guilhem-2026-paper
+# Disentangled_communities_and_embeddings_reproducibility (2026)
 
 > **Citation Note:** If you use this code or repository for your research paper, please cite: *[Insert Citation Here Upon Publication]*.
 

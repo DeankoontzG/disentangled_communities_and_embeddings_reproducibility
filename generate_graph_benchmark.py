@@ -225,9 +225,9 @@ def match_spatial_to_sbm_variance(P_sbm, target_links, positions):
     final_diff_pct = (abs(final_var - target_variance) / target_variance) * 100
     
     print("-" * 50)
-    print(f"✨ Optimal Sigma found: {opt_sigma:.4f}")
-    print(f"📊 Final Spatial Variance: {final_var:.8f}")
-    print(f"📢 FINAL VARIANCE DISCREPANCY: {final_diff_pct:.4f} %")
+    print(f"Optimal Sigma found: {opt_sigma:.4f}")
+    print(f"Final Spatial Variance: {final_var:.8f}")
+    print(f"FINAL VARIANCE DISCREPANCY: {final_diff_pct:.4f} %")
     print("-" * 50)
     
     return opt_sigma, final_P_spatial
@@ -337,8 +337,6 @@ def generate_graph_benchmarks(Hybrid_ratios_list, P_sbm, P_spatial, position, k_
     print(pd.DataFrame(results_list).to_string(index=False))
     print("="*70)
     
-    save_path = f"graph_library/{name}_P_matrices_iter_{nb_iter}.joblib"
-    joblib.dump(all_P_matrices, save_path)
     return all_P_matrices
 
 # =========================================================================
