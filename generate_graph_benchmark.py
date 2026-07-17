@@ -26,7 +26,7 @@ N_COMMUNITIES = 9  # 9 communities * 22 nodes = 198 nodes (perfectly egalitarian
 P_IN = 1.00
 P_OUT = 0.00
 
-# Parameters for "REALISTIC" mode (ignored if mode is "ANALYTIC")
+# Parameters for "REALISTIC" mode (ignored if mode is "STANDARD")
 REAL_GRAPH_NAME = "reel_jazz_collab_w_attributes.joblib"
 
 #######################################
@@ -336,7 +336,7 @@ def generate_graph_benchmarks(Hybrid_ratios_list, P_sbm, P_spatial, position, k_
     print("="*70)
     print(pd.DataFrame(results_list).to_string(index=False))
     print("="*70)
-    
+
     return all_P_matrices
 
 # =========================================================================
